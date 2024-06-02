@@ -1893,7 +1893,7 @@ class PylenmDataFactory(object):
         #     return color, temp
 
     def plot_all_time_series_simple(self, analyte_name=None, start_date=None, end_date=None, title='Dataset: Time ranges', x_label='Well', y_label='Year',
-                                min_days=10, x_min_lim=-5, x_max_lim = 170, y_min_date='1988-01-01', y_max_date='2020-01-01', return_data=False, filter=False, col=None, equals=[]):
+                                min_days=10, x_min_lim=-5, x_max_lim = 170, y_min_date='1988-01-01', y_max_date='2020-01-01', return_data=False, filter=False, col=None, equals=[], save_dir=None):
         """Plots the start and end date of analyte readings for differnt locations/sensors/wells.
 
         Args:
@@ -1937,7 +1937,7 @@ class PylenmDataFactory(object):
             wells_dateRange.loc[wells_dateRange.shape[0]]=[wellName,minDate,maxDate]
 
         wells_dateRange["RANGE"] = wells_dateRange.END_DATE - wells_dateRange.START_DATE
-        wells_dateRange.RANGE = wells_dateRange.RANGE.astype('timedelta64[D]').astype('int')
+        wells_dateRange.RANGE = wells_dateRange.RANGE.dt.days.astype('int')
         wells_dateRange = wells_dateRange[wells_dateRange.RANGE>min_days]
         wells_dateRange.sort_values(by=["RANGE","END_DATE","START_DATE"], ascending = (False, False, True), inplace=True)
         wells_dateRange.reset_index(inplace=True)
@@ -1970,6 +1970,10 @@ class PylenmDataFactory(object):
         fig.suptitle(title, fontsize=20)
         for i in range(wells_dateRange.shape[0]):
             ax.vlines(i,wells_dateRange.loc[i,'START_DATE'],wells_dateRange.loc[i,'END_DATE'],colors='k')
+        if save_dir:
+            if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+            fig.savefig(save_dir + '/' + 'timeseries' + str(start_date) + '.png', bbox_inches="tight")
         if(return_data):
             return wells_dateRange
 
