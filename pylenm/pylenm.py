@@ -791,7 +791,7 @@ class PylenmDataFactory(object):
         join = join.dropna()
         return join
     
-    def interpose_analyte_data_by_time_proximity(self, original_df, days, well_name, analytes, pylenm_df):
+    def interpose_analyte_data_by_time_proximity(self, original_df, frequency, well_name, analytes):
         #print('Interposition for well: ' + well_name)
         df = original_df
         df['COLLECTION_DATE'] = pd.to_datetime(df['COLLECTION_DATE'])
@@ -817,62 +817,62 @@ class PylenmDataFactory(object):
             piv = query.reset_index().pivot(index='COLLECTION_DATE',columns='ANALYTE_NAME', values='RESULT')
             piv = piv[analytes]
             piv.index = pd.to_datetime(piv.index)
-            totalSamples = piv.shape[0]
 
-        #Chooses a column with the least COLLECTION_DATE data points
-        column_with_most_nans = None
-        max_count_nans = 0
-        for column in piv.columns:
-            count_nans = piv[column].isna().sum()
-            if count_nans > max_count_nans:
-                max_count_nans = count_nans
-                column_with_most_nans = column
+            #Chooses a column with the least COLLECTION_DATE data points
+            column_with_most_nans = None
+            max_count_nans = 0
+            for column in piv.columns:
+                count_nans = piv[column].isna().sum()
+                if count_nans > max_count_nans:
+                    max_count_nans = count_nans
+                    column_with_most_nans = column
 
-        #print(max_count_nans)
-        #We only perform interposition if there are missing data points
-        if max_count_nans > 0:
-            #Picks the columns where the data points are present
-            df_filtered = piv.dropna(subset=[column_with_most_nans])
+            #print(max_count_nans)
+            #We only perform interposition if there are missing data points
+            if max_count_nans > 0:
+                #Picks the columns where the data points are present
+                df_filtered = piv.dropna(subset=[column_with_most_nans])
 
-            #print(df_filtered) 
+                #print(df_filtered) 
 
-            #Roams the remaining columns and looks for NaN
-            columns_with_nans = df_filtered.columns[df_filtered.isna().any()].tolist()
-            print('Interposing:')
-            print(columns_with_nans)
-            time_window = pd.Timedelta(days=days)
+                #Roams the remaining columns and looks for NaN
+                columns_with_nans = df_filtered.columns[df_filtered.isna().any()].tolist()
+                print('Interposing:')
+                print(columns_with_nans)
+                # TODO Dauren figure out how to pass string from "frequency" here
+                time_window = pd.Timedelta(days=100)
 
-            #If the RESULT for the COLLECTION_DATE is empty, the column is traversed for the closest COLLECTION_DATE data points within the provided interval
-            for col in columns_with_nans:
-                df_column_with_nan = pylenm_df.query_data(well_name, col)
+                #If the RESULT for the COLLECTION_DATE is empty, the column is traversed for the closest COLLECTION_DATE data points within the provided interval
+                for col in columns_with_nans:
+                    df_column_with_nan = self.query_data(well_name, col)
 
-                #For every value in a column that is NaN:
-                for date_index, row in df_filtered[df_filtered[col].isna()].iterrows():
-                    interposition_candidates = []
-                    for i, r in df_column_with_nan.iterrows():
-                        date = df_column_with_nan.at[i, 'COLLECTION_DATE']
-                        if (date_index + time_window >= date >= date_index - time_window):
-                            interposition_candidates.append([df_column_with_nan.at[i, 'RESULT'], df_column_with_nan.at[i, 'RESULT_UNITS'], date_index])
+                    #For every value in a column that is NaN:
+                    for date_index, row in df_filtered[df_filtered[col].isna()].iterrows():
+                        interposition_candidates = []
+                        for i, r in df_column_with_nan.iterrows():
+                            date = df_column_with_nan.at[i, 'COLLECTION_DATE']
+                            if (date_index + time_window >= date >= date_index - time_window):
+                                interposition_candidates.append([df_column_with_nan.at[i, 'RESULT'], df_column_with_nan.at[i, 'RESULT_UNITS'], date_index])
 
-                smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
-                for candidate in interposition_candidates:
-                    abs_time_diff = abs((candidate[2] - date_index).total_seconds())
-                    if abs_time_diff <= smallest_time_difference:
-                        smallest_time_difference = abs_time_diff
-                        df_filtered.at[date_index, col] = candidate[0]
+                    smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
+                    for candidate in interposition_candidates:
+                        abs_time_diff = abs((candidate[2] - date_index).total_seconds())
+                        if abs_time_diff <= smallest_time_difference:
+                            smallest_time_difference = abs_time_diff
+                            df_filtered.at[date_index, col] = candidate[0]
 
-                    #Addition of the interposed values to the original_df
-                    new_row = { 'STATION_ID': well_name, 'ANALYTE_NAME': col, 'COLLECTION_DATE': candidate[2], 'RESULT': candidate[0], 'RESULT_UNITS': candidate[1], 'UNCERTAINTY': None }
-                    df.loc[len(df)] = new_row
-                smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
+                        #Addition of the interposed values to the original_df
+                        new_row = { 'STATION_ID': well_name, 'ANALYTE_NAME': col, 'COLLECTION_DATE': candidate[2], 'RESULT': candidate[0], 'RESULT_UNITS': candidate[1], 'UNCERTAINTY': None }
+                        df.loc[len(df)] = new_row
+                    smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
 
                 #print(df_filtered)
         return df
 
-    def interpose_analyte_data_by_time_proximity_in_wells(self, original_df, days, wells, analytes):
+    def interpose_analyte_data_by_time_proximity_in_wells(self, original_df, frequency, wells, analytes):
         df = original_df
         for well in wells:
-            df = self.interpose_analyte_data_by_time_proximity(original_df=df, days=days, well_name=well, analytes=analytes, pylenm_df=pylenm_df)
+            df = self.interpose_analyte_data_by_time_proximity(original_df=df, frequency=frequency, well_name=well, analytes=analytes, pylenm_df=pylenm_df)
         return df
 
     def plot_corr_by_well(self, well_name, analytes, remove_outliers=True, z_threshold=4, interpolate=False, frequency='2W', save_dir='plot_correlation', log_transform=False, fontsize=20, returnData=False, remove=[], no_log=None):
@@ -896,6 +896,11 @@ class PylenmDataFactory(object):
             None
         """
         data = self.data
+        if interpolate:
+            print("rows in dataset before: " + str(len(data)))
+            data = self.interpose_analyte_data_by_time_proximity(original_df=self.data, frequency=frequency, well_name=well_name, analytes=analytes)
+            print("rows in dataset after: " + str(len(data)))
+            
         query = data[data.STATION_ID == well_name]
         a = list(np.unique(query.ANALYTE_NAME.values))# get all analytes from dataset
         for value in analytes:
