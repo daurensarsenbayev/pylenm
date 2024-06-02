@@ -872,7 +872,7 @@ class PylenmDataFactory(object):
     def interpose_analyte_data_by_time_proximity_in_wells(self, original_df, frequency, wells, analytes):
         df = original_df
         for well in wells:
-            df = self.interpose_analyte_data_by_time_proximity(original_df=df, frequency=frequency, well_name=well, analytes=analytes, pylenm_df=pylenm_df)
+            df = self.interpose_analyte_data_by_time_proximity(original_df=df, frequency=frequency, well_name=well, analytes=analytes)
         return df
 
     def plot_corr_by_well(self, well_name, analytes, remove_outliers=True, z_threshold=4, interpolate=False, frequency='2W', save_dir='plot_correlation', log_transform=False, fontsize=20, returnData=False, remove=[], no_log=None):
