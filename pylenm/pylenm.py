@@ -791,9 +791,9 @@ class PylenmDataFactory(object):
         join = join.dropna()
         return join
     
-    def interpose_analyte_data_by_time_proximity(self, original_df, frequency, well_name, analytes):
+    def interpose_analyte_data_by_time_proximity(self, days, well_name, analytes, save_dir='data/collocated/'):
         #print('Interposition for well: ' + well_name)
-        df = original_df
+        df = self.data
         df['COLLECTION_DATE'] = pd.to_datetime(df['COLLECTION_DATE'])
         query = df[df.STATION_ID == well_name]
 
@@ -806,7 +806,7 @@ class PylenmDataFactory(object):
             return (analyte in a)
         analytes = sorted(list(filter(filter_analytes, analytes)))
 
-        print(analytes)
+        print("Entries before interposition: " + str(len(df)))
 
         #We only perform interpositions for wells that have metrics for provided analytes
         if len(analytes) > 0:
@@ -840,7 +840,7 @@ class PylenmDataFactory(object):
                 print('Interposing:')
                 print(columns_with_nans)
                 # TODO Dauren figure out how to pass string from "frequency" here
-                time_window = pd.Timedelta(days=100)
+                time_window = pd.Timedelta(days=days)
 
                 #If the RESULT for the COLLECTION_DATE is empty, the column is traversed for the closest COLLECTION_DATE data points within the provided interval
                 for col in columns_with_nans:
@@ -860,13 +860,16 @@ class PylenmDataFactory(object):
                         if abs_time_diff <= smallest_time_difference:
                             smallest_time_difference = abs_time_diff
                             df_filtered.at[date_index, col] = candidate[0]
-
                         #Addition of the interposed values to the original_df
                         new_row = { 'STATION_ID': well_name, 'ANALYTE_NAME': col, 'COLLECTION_DATE': candidate[2], 'RESULT': candidate[0], 'RESULT_UNITS': candidate[1], 'UNCERTAINTY': None }
                         df.loc[len(df)] = new_row
                     smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
 
                 #print(df_filtered)
+        print("Length after interposition: " + str(len(df)))
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        df.to_csv(save_dir + 'collocation_well_' + well_name + '.csv')
         return df
 
     def interpose_analyte_data_by_time_proximity_in_wells(self, original_df, frequency, wells, analytes):

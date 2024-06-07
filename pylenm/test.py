@@ -16,7 +16,9 @@ concentration_data['STATION_ID'] = concentration_data['STATION_ID'].astype(str)
 pylenm_df = PylenmDataFactory(concentration_data) # Save concentration data
 pylenm_df.setConstructionData(construction_data) # Save construction data
 
-analytes = ['TRITIUM','SPECIFIC CONDUCTANCE', 'PH','URANIUM-238', 'DEPTH_TO_WATER']
+analytes = ['Conductivity', 'Magnesium', 'Dissolved Oxygen', 'Tritium', 'Strontium-90', 'Sodium']
 #pylenm_df.plot_PCA_by_date('1993-02-21', analytes)
 
-pylenm_df.plot_corr_by_well(well_name="FSB 95DR", analytes=analytes, remove_outliers=True, z_threshold=4, interpolate=True, frequency='2M', save_dir='plot_correlation', log_transform=False, fontsize=20, returnData=False, remove=[], no_log=None)
+#pylenm_df.plot_corr_by_well(well_name="FSB 95DR", analytes=analytes, remove_outliers=True, z_threshold=4, interpolate=True, frequency='2M', save_dir='plot_correlation', log_transform=False, fontsize=20, returnData=False, remove=[], no_log=None)
+
+pylenm_df.interpose_analyte_data_by_time_proximity(well_name="9054", analytes=analytes, days=100)
