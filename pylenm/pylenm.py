@@ -791,7 +791,7 @@ class PylenmDataFactory(object):
         join = join.dropna()
         return join
     
-    def interpose_analyte_data_by_time_proximity(self, days, well_name, analytes, save_dir='data/collocated/'):
+    def find_coincident_data(self, days, well_name, analytes, save_dir='data/collocated/'):
         #print('Interposition for well: ' + well_name)
         df = self.data
         df['COLLECTION_DATE'] = pd.to_datetime(df['COLLECTION_DATE'])
@@ -806,7 +806,7 @@ class PylenmDataFactory(object):
             return (analyte in a)
         analytes = sorted(list(filter(filter_analytes, analytes)))
 
-        print("Entries before interposition: " + str(len(df)))
+        # print("Entries before interposition: " + str(len(df)))
 
         #We only perform interpositions for wells that have metrics for provided analytes
         if len(analytes) > 0:
@@ -837,9 +837,9 @@ class PylenmDataFactory(object):
 
                 #Roams the remaining columns and looks for NaN
                 columns_with_nans = df_filtered.columns[df_filtered.isna().any()].tolist()
-                print('Interposing:')
-                print(columns_with_nans)
-                # TODO Dauren figure out how to pass string from "frequency" here
+                # print('Interposing:')
+                # print(columns_with_nans)
+                
                 time_window = pd.Timedelta(days=days)
 
                 #If the RESULT for the COLLECTION_DATE is empty, the column is traversed for the closest COLLECTION_DATE data points within the provided interval
@@ -866,7 +866,7 @@ class PylenmDataFactory(object):
                     smallest_time_difference = pd.Timedelta(days=10000).total_seconds()
 
                 #print(df_filtered)
-        print("Length after interposition: " + str(len(df)))
+        # print("Length after interposition: " + str(len(df)))
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         df.to_csv(save_dir + 'collocation_well_' + well_name + '.csv')

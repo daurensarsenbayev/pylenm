@@ -21,4 +21,4 @@ analytes = ['Conductivity', 'Magnesium', 'Dissolved Oxygen', 'Tritium', 'Stronti
 
 #pylenm_df.plot_corr_by_well(well_name="FSB 95DR", analytes=analytes, remove_outliers=True, z_threshold=4, interpolate=True, frequency='2M', save_dir='plot_correlation', log_transform=False, fontsize=20, returnData=False, remove=[], no_log=None)
 
-pylenm_df.interpose_analyte_data_by_time_proximity(well_name="9054", analytes=analytes, days=100)
+pylenm_df.find_coincident_data(well_name="9054", analytes=analytes, days=100)
